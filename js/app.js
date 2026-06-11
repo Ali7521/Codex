@@ -83,21 +83,58 @@ function navigateTo(screenId) {
 // --- Splash Screen Auto-advance ---
 function initSplash() {
   setTimeout(() => {
-    navigateTo('login-screen');
+    // Check if user is already logged in
+    const isLoggedIn = localStorage.getItem('tg_isLoggedIn');
+    if (isLoggedIn === 'true') {
+      navigateTo('home-screen');
+    } else {
+      navigateTo('login-screen');
+      
+      // Pre-fill email/password if remembered
+      const savedEmail = localStorage.getItem('tg_email');
+      const savedPassword = localStorage.getItem('tg_password');
+      if (savedEmail) document.getElementById('login-email').value = savedEmail;
+      if (savedPassword) document.getElementById('login-password').value = savedPassword;
+    }
   }, 3000);
 }
 
-// --- Login ---
+// --- Login & Logout ---
 function initLogin() {
   const form = document.getElementById('login-form');
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    showToast('Welcome back, Commander! \uD83D\uDD25', 'fa-check-circle');
-    setTimeout(() => navigateTo('home-screen'), 800);
+    
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const rememberMe = document.querySelector('.checkbox-label input[type="checkbox"]').checked;
+    
+    // Fake Authentication Check
+    if (email && password) {
+      // Save session
+      localStorage.setItem('tg_isLoggedIn', 'true');
+      
+      if (rememberMe) {
+        localStorage.setItem('tg_email', email);
+        localStorage.setItem('tg_password', password);
+      } else {
+        localStorage.removeItem('tg_email');
+        localStorage.removeItem('tg_password');
+      }
+      
+      showToast('Welcome back, Commander! 🔥', 'fa-check-circle');
+      setTimeout(() => navigateTo('home-screen'), 800);
+    } else {
+      showToast('Please enter email and password', 'fa-exclamation-circle');
+    }
   });
 }
 
-// --- Populate Challenges ---
+function logout() {
+  localStorage.setItem('tg_isLoggedIn', 'false');
+  navigateTo('login-screen');
+  showToast('Logged out successfully', 'fa-sign-out-alt');
+}
 function renderChallenges() {
   const container = document.getElementById('challenges-list');
   if (!container) return;
