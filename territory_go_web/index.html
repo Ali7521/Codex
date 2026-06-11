@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Territory Go - Walk. Capture. Conquer. A location-based territory capture game by Megabyte.">
+  <title>Territory Go | Walk. Capture. Conquer.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+
+    <!-- ============ SPLASH SCREEN ============ -->
+    <div id="splash-screen" class="screen active">
+      <div class="splash-bg">
+        <div class="splash-orb splash-orb-1"></div>
+        <div class="splash-orb splash-orb-2"></div>
+        <div class="splash-orb splash-orb-3"></div>
+      </div>
+      <div class="splash-content">
+        <div class="splash-logo-container">
+          <div class="splash-logo-ring"></div>
+          <div class="splash-logo-icon">
+            <i class="fas fa-map-marker-alt"></i>
+          </div>
+        </div>
+        <h1 class="splash-title">Territory<span class="splash-title-accent">Go</span></h1>
+        <p class="splash-tagline">Walk. Capture. Conquer.</p>
+        <div class="splash-team">by <span>Megabyte</span></div>
+        <div class="splash-loader">
+          <div class="splash-loader-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LOGIN SCREEN ============ -->
+    <div id="login-screen" class="screen">
+      <div class="login-bg">
+        <div class="login-shape login-shape-1"></div>
+        <div class="login-shape login-shape-2"></div>
+      </div>
+      <div class="login-content">
+        <div class="login-header">
+          <div class="login-logo-small">
+            <i class="fas fa-map-marker-alt"></i>
+          </div>
+          <h1>Welcome Back</h1>
+          <p>Sign in to continue your conquest</p>
+        </div>
+        <form id="login-form" class="login-form">
+          <div class="input-group">
+            <div class="input-icon"><i class="fas fa-envelope"></i></div>
+            <input type="email" id="login-email" placeholder="Email address" required>
+          </div>
+          <div class="input-group">
+            <div class="input-icon"><i class="fas fa-lock"></i></div>
+            <input type="password" id="login-password" placeholder="Password" required>
+          </div>
+          <div class="login-options">
+            <label class="checkbox-label">
+              <input type="checkbox" checked> Remember me
+            </label>
+            <a href="#" class="forgot-link">Forgot password?</a>
+          </div>
+          <button type="submit" class="btn-primary btn-full" id="login-btn">
+            <span>Login</span>
+            <i class="fas fa-arrow-right"></i>
+          </button>
+          <div class="login-divider">
+            <span>or continue with</span>
+          </div>
+          <div class="social-buttons">
+            <button type="button" class="btn-social"><i class="fab fa-google"></i></button>
+            <button type="button" class="btn-social"><i class="fab fa-apple"></i></button>
+            <button type="button" class="btn-social"><i class="fab fa-github"></i></button>
+          </div>
+          <p class="signup-link">Don't have an account? <a href="#" id="show-signup">Create one</a></p>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ HOME DASHBOARD ============ -->
+    <div id="home-screen" class="screen">
+      <div class="home-header">
+        <div class="home-header-content">
+          <div class="home-greeting">
+            <div class="home-avatar" id="home-avatar">
+              <i class="fas fa-user"></i>
+            </div>
+            <div>
+              <p class="home-welcome">Good evening,</p>
+              <h2 class="home-username">Commander 🔥</h2>
+            </div>
+          </div>
+          <div class="home-header-actions">
+            <button class="btn-icon" onclick="navigateTo('profile-screen')">
+              <i class="fas fa-bell"></i>
+              <span class="notification-dot"></span>
+            </button>
+          </div>
+        </div>
+        <div class="home-stats-row">
+          <div class="home-stat-card">
+            <div class="stat-icon stat-icon-xp"><i class="fas fa-star"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="player-xp">1,250</span>
+              <span class="stat-label">Total XP</span>
+            </div>
+          </div>
+          <div class="home-stat-card">
+            <div class="stat-icon stat-icon-streak"><i class="fas fa-fire"></i></div>
+            <div class="stat-info">
+              <span class="stat-value" id="player-streak">5 Days</span>
+              <span class="stat-label">Streak</span>
+            </div>
+          </div>
+          <div class="home-stat-card">
+            <div class="stat-icon stat-icon-level"><i class="fas fa-trophy"></i></div>
+            <div class="stat-info">
+              <span class="stat-value">Lvl 4</span>
+              <span class="stat-label">Rank</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-body">
+        <div class="section-header">
+          <h3>Daily Challenges</h3>
+          <span class="section-badge">3 Active</span>
+        </div>
+        <div class="challenges-list" id="challenges-list">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="section-header" style="margin-top: 24px;">
+          <h3>Quick Actions</h3>
+        </div>
+        <div class="quick-actions-grid">
+          <button class="quick-action-card" onclick="navigateTo('map-screen')">
+            <div class="qa-icon qa-map"><i class="fas fa-map-marked-alt"></i></div>
+            <span>Open Map</span>
+          </button>
+          <button class="quick-action-card" onclick="navigateTo('guild-screen')">
+            <div class="qa-icon qa-guild"><i class="fas fa-shield-alt"></i></div>
+            <span>Guilds</span>
+          </button>
+          <button class="quick-action-card" onclick="navigateTo('leaderboard-screen')">
+            <div class="qa-icon qa-leaderboard"><i class="fas fa-medal"></i></div>
+            <span>Leaderboard</span>
+          </button>
+          <button class="quick-action-card" onclick="navigateTo('rewards-screen')">
+            <div class="qa-icon qa-rewards"><i class="fas fa-gift"></i></div>
+            <span>Rewards</span>
+          </button>
+        </div>
+
+        <div class="section-header" style="margin-top: 24px;">
+          <h3>Recent Activity</h3>
+        </div>
+        <div class="activity-feed">
+          <div class="activity-item">
+            <div class="activity-dot activity-dot-green"></div>
+            <div class="activity-text">
+              <strong>Zone captured!</strong> Downtown Plaza
+              <span class="activity-time">2 hours ago</span>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot activity-dot-orange"></div>
+            <div class="activity-text">
+              <strong>Challenge completed!</strong> Walk 5km
+              <span class="activity-time">5 hours ago</span>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot activity-dot-purple"></div>
+            <div class="activity-text">
+              <strong>Badge earned!</strong> First Capture 🏆
+              <span class="activity-time">Yesterday</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MAP SCREEN ============ -->
+    <div id="map-screen" class="screen">
+      <div class="map-toolbar">
+        <button class="btn-icon btn-back" onclick="navigateTo('home-screen')">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 class="map-title">Territory Map</h2>
+        <button class="btn-icon" onclick="toggleMapLegend()">
+          <i class="fas fa-layer-group"></i>
+        </button>
+      </div>
+      <div id="map-container" class="map-container"></div>
+      <div id="map-legend" class="map-legend hidden">
+        <h4>Zone Types</h4>
+        <div class="legend-item"><span class="legend-color" style="background:#00C853"></span> Safe Zone</div>
+        <div class="legend-item"><span class="legend-color" style="background:#D50000"></span> Danger Zone</div>
+        <div class="legend-item"><span class="legend-color" style="background:#6200EA"></span> Private Zone (Locked)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#42A5F5"></span> Neutral Zone</div>
+      </div>
+      <div class="map-capture-bar">
+        <div class="capture-info">
+          <i class="fas fa-crosshairs"></i>
+          <span>You're near <strong>Downtown Plaza</strong></span>
+        </div>
+        <button class="btn-capture" id="capture-btn">
+          <i class="fas fa-flag"></i>
+          <span>Capture Zone</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ GUILD SCREEN ============ -->
+    <div id="guild-screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-icon btn-back" onclick="navigateTo('home-screen')">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2>Guilds</h2>
+        <button class="btn-icon"><i class="fas fa-plus"></i></button>
+      </div>
+      <div class="tab-bar" id="guild-tabs">
+        <button class="tab-btn active" data-tab="guild-my">My Guild</button>
+        <button class="tab-btn" data-tab="guild-leaderboard">Rankings</button>
+        <button class="tab-btn" data-tab="guild-chat">Chat</button>
+      </div>
+      <div class="tab-content">
+        <div id="guild-my" class="tab-pane active">
+          <div class="guild-empty-state">
+            <div class="guild-shield-icon">
+              <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3>Join the Battle!</h3>
+            <p>Be part of a guild to capture larger territories and compete globally with your team.</p>
+            <button class="btn-primary" style="margin-top:16px">
+              <i class="fas fa-search"></i> Find a Guild
+            </button>
+            <button class="btn-outline" style="margin-top:12px">
+              <i class="fas fa-plus"></i> Create Guild
+            </button>
+          </div>
+        </div>
+        <div id="guild-leaderboard" class="tab-pane">
+          <div class="guild-rankings-list" id="guild-rankings-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div id="guild-chat" class="tab-pane">
+          <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+              <div class="chat-msg chat-msg-other">
+                <div class="chat-avatar">A</div>
+                <div class="chat-bubble">
+                  <span class="chat-name">AlphaWolf</span>
+                  <p>Anyone online for a zone raid tonight? 🔥</p>
+                  <span class="chat-time">6:30 PM</span>
+                </div>
+              </div>
+              <div class="chat-msg chat-msg-other">
+                <div class="chat-avatar">S</div>
+                <div class="chat-bubble">
+                  <span class="chat-name">ShadowRunner</span>
+                  <p>I'm in! Let's hit the downtown sector 💪</p>
+                  <span class="chat-time">6:32 PM</span>
+                </div>
+              </div>
+              <div class="chat-msg chat-msg-self">
+                <div class="chat-bubble">
+                  <p>Count me in! On my way 🏃</p>
+                  <span class="chat-time">6:35 PM</span>
+                </div>
+              </div>
+              <div class="chat-msg chat-msg-other">
+                <div class="chat-avatar">N</div>
+                <div class="chat-bubble">
+                  <span class="chat-name">NightHawk</span>
+                  <p>Watch out for danger zones near the park area ⚠️</p>
+                  <span class="chat-time">6:38 PM</span>
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-bar">
+              <input type="text" placeholder="Type a message..." class="chat-input">
+              <button class="btn-send"><i class="fas fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LEADERBOARD SCREEN ============ -->
+    <div id="leaderboard-screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-icon btn-back" onclick="navigateTo('home-screen')">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2>Leaderboard</h2>
+        <button class="btn-icon"><i class="fas fa-filter"></i></button>
+      </div>
+      <div class="tab-bar" id="lb-tabs">
+        <button class="tab-btn active" data-tab="lb-daily">Daily</button>
+        <button class="tab-btn" data-tab="lb-monthly">Monthly</button>
+      </div>
+      <div class="tab-content">
+        <div id="lb-daily" class="tab-pane active">
+          <div class="lb-podium">
+            <div class="podium-slot podium-2">
+              <div class="podium-avatar podium-silver">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Lily" alt="2nd">
+              </div>
+              <span class="podium-name">ShadowFox</span>
+              <span class="podium-xp">8,420 XP</span>
+              <div class="podium-bar podium-bar-2">2</div>
+            </div>
+            <div class="podium-slot podium-1">
+              <div class="podium-crown"><i class="fas fa-crown"></i></div>
+              <div class="podium-avatar podium-gold">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Felix" alt="1st">
+              </div>
+              <span class="podium-name">AlphaWolf</span>
+              <span class="podium-xp">12,350 XP</span>
+              <div class="podium-bar podium-bar-1">1</div>
+            </div>
+            <div class="podium-slot podium-3">
+              <div class="podium-avatar podium-bronze">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Aneka" alt="3rd">
+              </div>
+              <span class="podium-name">NightHawk</span>
+              <span class="podium-xp">7,100 XP</span>
+              <div class="podium-bar podium-bar-3">3</div>
+            </div>
+          </div>
+          <div class="lb-list" id="lb-daily-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div id="lb-monthly" class="tab-pane">
+          <div class="lb-podium">
+            <div class="podium-slot podium-2">
+              <div class="podium-avatar podium-silver">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Zoe" alt="2nd">
+              </div>
+              <span class="podium-name">RunnerX</span>
+              <span class="podium-xp">45,200 XP</span>
+              <div class="podium-bar podium-bar-2">2</div>
+            </div>
+            <div class="podium-slot podium-1">
+              <div class="podium-crown"><i class="fas fa-crown"></i></div>
+              <div class="podium-avatar podium-gold">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Max" alt="1st">
+              </div>
+              <span class="podium-name">TerraKing</span>
+              <span class="podium-xp">68,900 XP</span>
+              <div class="podium-bar podium-bar-1">1</div>
+            </div>
+            <div class="podium-slot podium-3">
+              <div class="podium-avatar podium-bronze">
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Sam" alt="3rd">
+              </div>
+              <span class="podium-name">ZoneMaster</span>
+              <span class="podium-xp">39,800 XP</span>
+              <div class="podium-bar podium-bar-3">3</div>
+            </div>
+          </div>
+          <div class="lb-list" id="lb-monthly-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ REWARDS SCREEN ============ -->
+    <div id="rewards-screen" class="screen">
+      <div class="screen-header">
+        <button class="btn-icon btn-back" onclick="navigateTo('home-screen')">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2>Monthly Rewards</h2>
+        <button class="btn-icon"><i class="fas fa-info-circle"></i></button>
+      </div>
+      <div class="rewards-header">
+        <div class="rewards-points-card">
+          <div class="rewards-points-bg"></div>
+          <div class="rewards-points-content">
+            <span class="rewards-label">Your Reward Points</span>
+            <span class="rewards-value">4,250</span>
+            <div class="rewards-progress-container">
+              <div class="rewards-progress-bar">
+                <div class="rewards-progress-fill" style="width:85%"></div>
+              </div>
+              <span class="rewards-progress-text">750 points until next reward!</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rewards-list" id="rewards-list">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- ============ PROFILE SCREEN ============ -->
+    <div id="profile-screen" class="screen">
+      <div class="profile-header-bg">
+        <button class="btn-icon btn-back btn-back-white" onclick="navigateTo('home-screen')">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <button class="btn-icon btn-back-white" style="position:absolute;top:16px;right:16px" onclick="navigateTo('login-screen')">
+          <i class="fas fa-cog"></i>
+        </button>
+      </div>
+      <div class="profile-content">
+        <div class="profile-avatar-section">
+          <div class="profile-avatar-ring">
+            <div class="profile-avatar">
+              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Commander" alt="Profile">
+            </div>
+          </div>
+          <h2 class="profile-name">Commander</h2>
+          <span class="profile-title">Level 4 Conqueror</span>
+        </div>
+
+        <div class="profile-stats-grid">
+          <div class="profile-stat">
+            <i class="fas fa-star"></i>
+            <span class="profile-stat-value">1,250</span>
+            <span class="profile-stat-label">Total XP</span>
+          </div>
+          <div class="profile-stat">
+            <i class="fas fa-fire"></i>
+            <span class="profile-stat-value">5</span>
+            <span class="profile-stat-label">Day Streak</span>
+          </div>
+          <div class="profile-stat">
+            <i class="fas fa-flag"></i>
+            <span class="profile-stat-value">42</span>
+            <span class="profile-stat-label">Zones</span>
+          </div>
+          <div class="profile-stat">
+            <i class="fas fa-shield-alt"></i>
+            <span class="profile-stat-value">—</span>
+            <span class="profile-stat-label">Guild</span>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <h3>Earned Badges</h3>
+          <div class="badges-grid">
+            <div class="badge-item">
+              <div class="badge-icon badge-green"><i class="fas fa-walking"></i></div>
+              <span>Marathoner</span>
+            </div>
+            <div class="badge-item">
+              <div class="badge-icon badge-orange"><i class="fas fa-flag"></i></div>
+              <span>First Capture</span>
+            </div>
+            <div class="badge-item">
+              <div class="badge-icon badge-purple"><i class="fas fa-shield-alt"></i></div>
+              <span>Defender</span>
+            </div>
+            <div class="badge-item">
+              <div class="badge-icon badge-blue"><i class="fas fa-users"></i></div>
+              <span>Team Player</span>
+            </div>
+            <div class="badge-item badge-locked">
+              <div class="badge-icon badge-grey"><i class="fas fa-lock"></i></div>
+              <span>???</span>
+            </div>
+            <div class="badge-item badge-locked">
+              <div class="badge-icon badge-grey"><i class="fas fa-lock"></i></div>
+              <span>???</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <h3>Streak History</h3>
+          <div class="streak-week">
+            <div class="streak-day streak-done"><span>M</span><i class="fas fa-check-circle"></i></div>
+            <div class="streak-day streak-done"><span>T</span><i class="fas fa-check-circle"></i></div>
+            <div class="streak-day streak-done"><span>W</span><i class="fas fa-check-circle"></i></div>
+            <div class="streak-day streak-done"><span>T</span><i class="fas fa-check-circle"></i></div>
+            <div class="streak-day streak-done"><span>F</span><i class="fas fa-check-circle"></i></div>
+            <div class="streak-day"><span>S</span><i class="far fa-circle"></i></div>
+            <div class="streak-day"><span>S</span><i class="far fa-circle"></i></div>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <h3>XP Progress</h3>
+          <div class="xp-progress-card">
+            <div class="xp-progress-header">
+              <span>Level 4</span>
+              <span>Level 5</span>
+            </div>
+            <div class="xp-progress-bar">
+              <div class="xp-progress-fill" style="width:62%"></div>
+            </div>
+            <span class="xp-progress-text">1,250 / 2,000 XP</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ BOTTOM NAVIGATION ============ -->
+    <nav id="bottom-nav" class="bottom-nav hidden">
+      <button class="nav-btn active" data-screen="home-screen">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn" data-screen="map-screen">
+        <i class="fas fa-map"></i>
+        <span>Map</span>
+      </button>
+      <button class="nav-btn" data-screen="guild-screen">
+        <i class="fas fa-shield-alt"></i>
+        <span>Guild</span>
+      </button>
+      <button class="nav-btn" data-screen="leaderboard-screen">
+        <i class="fas fa-trophy"></i>
+        <span>Ranks</span>
+      </button>
+      <button class="nav-btn" data-screen="profile-screen">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
