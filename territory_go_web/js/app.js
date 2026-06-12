@@ -83,21 +83,58 @@ function navigateTo(screenId) {
 // --- Splash Screen Auto-advance ---
 function initSplash() {
   setTimeout(() => {
-    navigateTo('login-screen');
+    // Check if user is already logged in
+    const isLoggedIn = localStorage.getItem('tg_isLoggedIn');
+    if (isLoggedIn === 'true') {
+      navigateTo('home-screen');
+    } else {
+      navigateTo('login-screen');
+      
+      // Pre-fill email/password if remembered
+      const savedEmail = localStorage.getItem('tg_email');
+      const savedPassword = localStorage.getItem('tg_password');
+      if (savedEmail) document.getElementById('login-email').value = savedEmail;
+      if (savedPassword) document.getElementById('login-password').value = savedPassword;
+    }
   }, 3000);
 }
 
-// --- Login ---
+// --- Login & Logout ---
 function initLogin() {
   const form = document.getElementById('login-form');
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    showToast('Welcome back, Commander! \uD83D\uDD25', 'fa-check-circle');
-    setTimeout(() => navigateTo('home-screen'), 800);
+    
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const rememberMe = document.querySelector('.checkbox-label input[type="checkbox"]').checked;
+    
+    // Fake Authentication Check
+    if (email && password) {
+      // Save session
+      localStorage.setItem('tg_isLoggedIn', 'true');
+      
+      if (rememberMe) {
+        localStorage.setItem('tg_email', email);
+        localStorage.setItem('tg_password', password);
+      } else {
+        localStorage.removeItem('tg_email');
+        localStorage.removeItem('tg_password');
+      }
+      
+      showToast('Welcome back, Commander! 🔥', 'fa-check-circle');
+      setTimeout(() => navigateTo('home-screen'), 800);
+    } else {
+      showToast('Please enter email and password', 'fa-exclamation-circle');
+    }
   });
 }
 
-// --- Populate Challenges ---
+function logout() {
+  localStorage.setItem('tg_isLoggedIn', 'false');
+  navigateTo('login-screen');
+  showToast('Logged out successfully', 'fa-sign-out-alt');
+}
 function renderChallenges() {
   const container = document.getElementById('challenges-list');
   if (!container) return;
@@ -184,8 +221,11 @@ function renderRewards() {
   }).join('');
 }
 
-// --- Map ---
+/// --- Map ---
 let mapInstance = null;
+let playerMarker = null;
+let watchId = null;
+
 function initMap() {
   if (mapInstance) {
     mapInstance.invalidateSize();
@@ -194,60 +234,92 @@ function initMap() {
   const container = document.getElementById('map-container');
   if (!container) return;
 
+  // Initial dummy view
   mapInstance = L.map(container, {
     zoomControl: false,
   }).setView([37.7749, -122.4194], 14);
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '\u00a9 OpenStreetMap',
+    attribution: '© OpenStreetMap',
     subdomains: 'abcd',
     maxZoom: 19,
   }).addTo(mapInstance);
 
-  // Safe zone (green)
-  L.polygon([
-    [37.7749, -122.4194],
-    [37.7819, -122.4194],
-    [37.7819, -122.4094],
-    [37.7749, -122.4094],
-  ], { color: '#00C853', fillColor: '#00C853', fillOpacity: 0.35, weight: 2 }).addTo(mapInstance)
-    .bindPopup('<strong>Safe Zone</strong><br>Downtown Plaza');
-
-  // Danger zone (red)
-  L.polygon([
-    [37.7649, -122.4294],
-    [37.7709, -122.4294],
-    [37.7709, -122.4194],
-    [37.7649, -122.4194],
-  ], { color: '#D50000', fillColor: '#D50000', fillOpacity: 0.35, weight: 2 }).addTo(mapInstance)
-    .bindPopup('<strong>\u26A0\uFE0F Danger Zone</strong><br>High-risk territory');
-
-  // Private zone (purple)
-  L.polygon([
-    [37.7549, -122.4094],
-    [37.7609, -122.4094],
-    [37.7609, -122.3994],
-    [37.7549, -122.3994],
-  ], { color: '#6200EA', fillColor: '#6200EA', fillOpacity: 0.35, weight: 2 }).addTo(mapInstance)
-    .bindPopup('<strong>\uD83D\uDD12 Private Zone</strong><br>Locked territory');
-
-  // Neutral zone (blue)
-  L.polygon([
-    [37.7730, -122.4350],
-    [37.7790, -122.4350],
-    [37.7790, -122.4270],
-    [37.7730, -122.4270],
-  ], { color: '#42A5F5', fillColor: '#42A5F5', fillOpacity: 0.35, weight: 2 }).addTo(mapInstance)
-    .bindPopup('<strong>Neutral Zone</strong><br>Unclaimed territory');
-
-  // Player marker
   const playerIcon = L.divIcon({
     html: '<div style="width:20px;height:20px;background:#00E676;border:3px solid white;border-radius:50%;box-shadow:0 0 12px rgba(0,230,118,0.6)"></div>',
     iconSize: [20, 20],
     className: '',
   });
-  L.marker([37.778, -122.415], { icon: playerIcon }).addTo(mapInstance)
+
+  playerMarker = L.marker([37.7749, -122.4194], { icon: playerIcon }).addTo(mapInstance)
     .bindPopup('<strong>You are here</strong>');
+
+  // Request GPS
+  if ("geolocation" in navigator) {
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        // Update marker and map center
+        playerMarker.setLatLng([lat, lng]);
+        mapInstance.setView([lat, lng], 15);
+        
+        // Draw zones relative to user's first location if not drawn
+        if (!mapInstance.zonesDrawn) {
+          drawDynamicZones(lat, lng);
+          mapInstance.zonesDrawn = true;
+        }
+      },
+      (error) => {
+        console.warn("GPS Error: ", error);
+        showToast("Please allow location access to play", "fa-exclamation-triangle");
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+    );
+  } else {
+    showToast("GPS not supported on your device", "fa-exclamation-triangle");
+  }
+}
+
+function drawDynamicZones(lat, lng) {
+  const offset = 0.005; // rough degree offset for demo zones
+
+  // Safe zone (green) - slightly North
+  L.polygon([
+    [lat + offset, lng - offset],
+    [lat + offset*2, lng - offset],
+    [lat + offset*2, lng + offset],
+    [lat + offset, lng + offset],
+  ], { color: '#00C853', fillColor: '#00C853', fillOpacity: 0.35, weight: 2 }).addTo(mapInstance)
+    .bindPopup('<strong>Safe Zone</strong><br>Local Area');
+
+  // Danger zone (red) - slightly South
+  L.polygon([
+    [lat - offset*2, lng - offset],
+    [lat - offset, lng - offset],
+    [lat - offset, lng + offset],
+    [lat - offset*2, lng + offset],
+  ], { color: '#D50000', fillColor: '#D50000', fillOpacity: 0.35, weight: 2 }).addTo(mapInstance)
+    .bindPopup('<strong>⚠️ Danger Zone</strong><br>High-risk territory');
+
+  // Private zone (purple) - slightly East
+  L.polygon([
+    [lat - offset, lng + offset*1.5],
+    [lat + offset, lng + offset*1.5],
+    [lat + offset, lng + offset*2.5],
+    [lat - offset, lng + offset*2.5],
+  ], { color: '#6200EA', fillColor: '#6200EA', fillOpacity: 0.35, weight: 2 }).addTo(mapInstance)
+    .bindPopup('<strong>🔒 Private Zone</strong><br>Locked territory');
+
+  // Neutral zone (blue) - slightly West
+  L.polygon([
+    [lat - offset, lng - offset*2.5],
+    [lat + offset, lng - offset*2.5],
+    [lat + offset, lng - offset*1.5],
+    [lat - offset, lng - offset*1.5],
+  ], { color: '#42A5F5', fillColor: '#42A5F5', fillOpacity: 0.35, weight: 2 }).addTo(mapInstance)
+    .bindPopup('<strong>Neutral Zone</strong><br>Unclaimed territory');
 }
 
 function toggleMapLegend() {
